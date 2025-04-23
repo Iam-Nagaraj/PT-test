@@ -1,0 +1,70 @@
+#!/bin/bash
+
+# Define SAP system parameters
+SAP_INSTANCE="00"
+SAP_USER="user"
+SAP_PASSWORD="test"
+
+# Function to monitor CPU usage
+CPU_usage() {
+    # To Print a message indicating the start of CPU monitoring
+    echo "Monitoring CPU usage..."
+    
+    # Run the top command in batch mode with 1 iteration and get the CPU usage
+    cpu_percent=$(top -b -n1 | grep "Cpu(s)" | awk '{printf $2 + $4}')
+    
+    # Print the current CPU usage
+    echo "Current CPU usage: $cpu_percent%"
+}
+
+# Function to check memory usage
+check_memory_usage() {
+    # Print a message indicating the start of memory monitoring
+    echo "Checking memory usage..."
+    
+    # Run the free command to get memory usage and process the output with grep and awk
+    memory_usage=$(free -m | grep "Mem:" | awk '{printf "%.2f", $3*100/$2 }')
+    
+    # Print the current memory usage
+    echo "Current memory usage: $memory_usage%"
+}
+
+# Function to check SAP system status
+check_sap_status() {
+    # Print a message indicating the start of SAP system status check
+    echo "Checking SAP system status..."
+    
+    # Run the sapcontrol command to get the process list, filter for MessageServer, and extract the status
+    sap_status=$(sapcontrol -nr $SAP_INSTANCE -function GetProcessList -user $SAP_USER -passwd $SAP_PASSWORD | grep "MessageServer" | awk '{print $3}')
+    
+    # Print the current SAP system status
+    echo "SAP system status: $sap_status"
+}
+
+# Function to optimize SAP system
+optimize_sap_system() {
+    # Print a message indicating the start of SAP system optimization
+    echo "Optimizing SAP system..."
+    
+    # Example optimization command: Restart the SAP service
+    sapcontrol -nr $SAP_INSTANCE -function RestartService -user $SAP_USER -passwd $SAP_PASSWORD
+    
+    # Print a message indicating the completion of SAP system optimization
+    echo "SAP system optimized."
+}
+
+# Generate the report filename with date and time
+report="/home/performance_tuning/report_$(date '+%Y-%m-%d_%H-%M-%S').txt"
+
+# Main script execution
+{
+    CPU_usage
+    check_memory_usage
+    check_sap_status
+    optimize_sap_system
+    echo "SAP performance tuning completed."
+} > "$report"
+
+# Send the report via email
+#By using corntab can schedule the report to generate every 1 hr and send a mail.
+mail -s "SAP Performance Report" v.nagaraj@capgemini.com < "$report"
